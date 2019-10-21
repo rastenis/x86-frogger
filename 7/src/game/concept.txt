@@ -1,0 +1,18 @@
+              Frogger: v0.0.1
+
+
+              1) ENTER to start
+              2) 
+              3) 
+
+
+
+
+
+
+
+
+utility functions
+
+1. screen clear
+2. write string at coords
