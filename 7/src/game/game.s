@@ -5,13 +5,14 @@
 
 .section .game.data
 
+# TODO: table for game loop section jumps
+
 .section .game.text
 
 gameInit:
-	# call generation for the first time
+	# setting program stage to 0, menu
 	movq	$0,	%rbx
 	ret
-
 
 gameLoop:
 	# 
@@ -20,12 +21,25 @@ gameLoop:
 	# 	...
 	#
 
+	# TODO: fix %rbx spillover (gameLoop gets executed before gameInit, BAD).
+
+	# JUMP STAGE: go to the appropriate section of the game loop
+	# TODO: expand with table
+	cmpq $0, %rbx
+	jne _play_loop
+
 	# MENU STAGE:
 	_menu: 
 	call showMenu
+	call listenMenu
 
-	# GAME STAGE
-	_game_loop:
+	jmp _end_game_loop
+
+	# GAME STAGE (play loop instead of game loop for clarity)
+	_play_loop:
 	# ... call game loop
+	call generate
+
+	_end_game_loop:
 
 	ret
