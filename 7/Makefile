@@ -39,6 +39,9 @@ HD_img:
 qemu: all
 	qemu-system-x86_64 HD_img
 
+qemu-gdb: all
+	qemu-system-x86_64 HD_img -s -S
+
 kvm: all
 	qemu-system-x86_64 -enable-kvm -cpu host HD_img
 

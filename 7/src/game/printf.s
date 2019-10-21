@@ -1,6 +1,11 @@
-.global print
+.file "src/game/printf.s"
 
-.data
+.global printf_coords
+
+.section .game.data
+
+string1: .asciz "Frogger v0.0.1"
+format: .asciz "%d %u %s"
 
 # printf special character jump table (quadword aligned)
 .align 16
@@ -15,33 +20,37 @@ jmptbl:
     .quad special_case_u                # u 
     .skip 8*(256 - 'v) + 8
 
-.text
+.section .game.text
 
 #
-# write_char
+# _write_char
 #
-# Write a single char to stdout using a syscall
+# Write a single char to the screen at the given coordinates using the given color information.
+# Delegates the call to putChar.
+# 
+# Increments %r14 by one.
 #
 # Parameters:
-#  %rdi the char to print
-write_char:
-    pushq   %rbp
-    movq    %rsp, %rbp
+#  %rdi char to print
+#  %rsi color
+#
+_write_char:
+  movq    %rdi, %rdx
+  movq    -8(%rbp), %rcx
+  movq    %r14, %rdi
+  movq    %r15, %rsi
 
-    pushq   %rdi
-
-    leaq    -8(%rbp), %rsi  # load the effective address of the char into %rsi
-    movq    $1, %rdi        # indicates stdout
-    movq    $1, %rax        # system call 1 equates to sys_write
-    movq    $1, %rdx        # indicates the length, just one char
-    syscall                 # do the syscall
-
-    movq    %rbp, %rsp
-    popq    %rbp
-    retq
+  pushq   %r8
+  pushq   %r9
+  call    putChar
+  popq    %r9
+  popq    %r8
+  
+  incq    %r14
+  retq
 
 #
-# printf
+# printf_coords
 #
 # Printf subroutine. Implements the following format specifiers:
 #  %s   string
@@ -58,7 +67,7 @@ write_char:
 #  %r9   2nd value
 #  stack 3rd-4th values (pushed in reverse order)
 #
-our_printf:
+printf_coords:
     # 
     # registers used:
     #  %rbx     special case flag
@@ -70,7 +79,12 @@ our_printf:
     pushq   %rbx                # store %rbx, because it is callee-saved
     pushq   %r12                # same for %r12
     pushq   %r13                # ... and for %r13
+    pushq   %r14                # ... and for %r14
+    pushq   %r15                # ... and for %r15
     movq    %rsp, %rbp          # store current stack pointer as base pointer
+
+    # Store the color as a local variable on the s
+    pushq   %rcx
 
     # Push all other register arguments to the stack in reverse order.
     pushq   %r9
@@ -78,6 +92,9 @@ our_printf:
     #pushq   %rcx
     #pushq   %rdx
     #pushq   %rsi
+    
+    movq    %rdi, %r14          # store the x coord
+    movq    %rsi, %r15          # store the y coord
     
     movq    $0, %rbx            # clear %rbx because we're going to use it
     movq    $0, %r9             # clear %r9 because we're going to use it
@@ -110,10 +127,10 @@ our_printf:
         cmpq    $3, %r9                 # compare %r9 to 6
         jge     _stack_arg
 
-        movq    -24(%rbp, %r9, 8), %rax # from reg args
+        movq    -32(%rbp, %r9, 8), %rax # from reg args
         jmp     _jmp_handler
         _stack_arg:
-        movq    16(%rbp, %r9, 8), %rax  # from stack args
+        movq    32(%rbp, %r9, 8), %rax  # from stack args
 
         _jmp_handler:
         jmpq    *%rdx                   # finally jump to the action handler
@@ -126,9 +143,9 @@ our_printf:
         jmp     _case_handled       # skip over the rest of step 3, we can continue to the next iteration of the format read loop
     _not_percent:
         movq    $0, %rdi
-        movb    (%r12), %dil        # prepare the first argument for write_char
+        movb    (%r12), %dil        # prepare the first argument for _write_char
         movq    $0, %rax            # clearing the rax register before calling function
-        call    write_char          # call the write_char function to print out the char
+        call    _write_char          # call the _write_char function to print out the char
     
     _case_handled:                  # jump to this when special case was handled, to make sure step 3 is skipped
     
@@ -137,42 +154,40 @@ our_printf:
     _format_read_loop_end:
     
         movq    %rbp, %rsp          # discard local stack space
+        popq    %r15                # restore old %r15
+        popq    %r14                # restore old %r14
         popq    %r13                # restore old %r13
         popq    %r12                # restore old %r12
         popq    %rbx                # restore old %rbx
         popq    %rbp                # restore the base pointer
         retq
 
-#
-# Main subroutine
-#
-#main:
-#    pushq   %rbp                # store the old base pointer
-#    movq    %rsp, %rbp          # store current stack pointer as base pointer
-#
-#    # Preparing a simulation of a out_printf call
-#    movq    $-123, %rsi
-#    movq    $456, %rdx
-#    movq    $string1, %rcx
-#    movq    $-1, %r8
-#    movq    $91, %r9
-#    pushq   $string3
-#    pushq   $string2
-#    movq    $format, %rdi
-#    call    our_printf
-#
-#    popq    %rbp                # restore the base pointer
-#    movq    $0, %rdi            # the program is returning a 0
-#    call    exit                # call the exit
 
-
+  main:
+  	pushq   %rbp                # store the old base pointer
+	  movq    %rsp, %rbp          # store current stack pointer as base pointer
+  
+	  # Preparing a simulation of a out_printf call
+	  movq    $5, %rsi            # x = 5
+	  movq    $5, %rdx            # y = 5
+	  movq    $0x0f, %rcx         # black background, white foreground
+	  movq    $-1, %r8
+	  movq    $91, %r9
+	  pushq   $string1
+	  movq    $format, %rdi
+	  call    printf_coords
+  
+	  movq    %rbp, %rsp          # discard local variables
+	  popq    %rbp                # restore the base pointer
+	  retq
+  
 # Special cases
 
 
 special_case_percent:           # print out one percent signs
     # print a percent
     movq    $'%, %rdi
-    call    write_char
+    call    _write_char
 
     jmp     _case_handled
 
@@ -185,7 +200,7 @@ special_case_d:                 # print out corresponding parameter as signed in
     # print a minus sign
     pushq   %rax
     movq    $'-, %rdi
-    call    write_char
+    call    _write_char
     popq    %rax
 
     negq    %rax                        # make the number positive
@@ -201,11 +216,11 @@ special_case_s:                         # print out corresponding parameter as s
 
     _special_case_s_loop:
         movq    $0, %rdi
-        movb    (%r10), %dil        # prepare the first argument for write_char
+        movb    (%r10), %dil        # prepare the first argument for _write_char
         cmpb    $0, %dil            # do a quick check to see if we're at the end of the string
         jz      _case_handled       # if so (if we're at the end), jump back to _case_handled
         movq    $0, %rax            # clearing %rax before calling function
-        call    write_char          # call the write_char function to print out the char
+        call    _write_char          # call the _write_char function to print out the char
 
         incq    %r10
         jmp     _special_case_s_loop
@@ -229,7 +244,7 @@ special_case_u:                     # print out corresponding parameter as unsig
         movq    $0, %rdi
         popq    %rdi
         addq    $'0, %rdi
-        call    write_char
+        call    _write_char
         decq    %r13
         jnz     _special_case_u_loop_print
 
@@ -239,11 +254,11 @@ special_case_unknown:               # print out the current character, preceded 
 
     # print a percent
     movq    $'%, %rdi
-    call    write_char
+    call    _write_char
 
     # print the current char
     movq    $0, %rdi
     movb    %r8b, %dil
-    call    write_char
+    call    _write_char
 
     jmp     _case_handled
