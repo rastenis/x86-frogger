@@ -4,9 +4,6 @@
 
 .section .game.data
 
-string1: .asciz "Frogger v0.0.1"
-format: .asciz "%d %u %s"
-
 # printf special character jump table (quadword aligned)
 .align 16
 jmptbl:
@@ -93,8 +90,8 @@ printf_coords:
     #pushq   %rdx
     #pushq   %rsi
     
-    movq    %rdi, %r14          # store the x coord
-    movq    %rsi, %r15          # store the y coord
+    movq    %rsi, %r14          # store the x coord
+    movq    %rdx, %r15          # store the y coord
     
     movq    $0, %rbx            # clear %rbx because we're going to use it
     movq    $0, %r9             # clear %r9 because we're going to use it
