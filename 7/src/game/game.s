@@ -15,6 +15,7 @@ gameInit:
 	ret
 
 gameLoop:
+	call screenClear	# per-gameloop screen wipe
 	# 
 	# registers used:
 	# 	%rbx   program stage counter; 0 is the initial value (menu stage), 1 is the game stage, 2 is high score, 3 is exit.
