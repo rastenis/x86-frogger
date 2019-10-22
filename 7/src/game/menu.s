@@ -1,4 +1,4 @@
-.file "src/game/game.s"
+.file "src/game/menu.s"
 
 .global showMenu
 
@@ -71,7 +71,7 @@ listenMenu:
 	jg		_menu_nothing_pressed	# TODO: this does not work; every key gets written to rbx, not only 1234
 
 	# setting menu var to pressed key
-	movq	%rax, %r12
+	movq	%rax, (gameStage)
 
 	_menu_nothing_pressed:
 

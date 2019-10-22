@@ -1,4 +1,4 @@
-.file "src/game/game.s"
+.file "src/game/frogger.s"
 
 .global showMenu
 
@@ -10,6 +10,10 @@ stringgame: .asciz "You're now playing the game :)"
 
 generate:
 	# Print temp.
+	call initiateDisplay
+
+
+
 	movq    $32, %rsi           # x = 32
 	movq    $15, %rdx            # y = 15
 	movq    $0xf3, %rcx         
