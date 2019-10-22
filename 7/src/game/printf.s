@@ -160,23 +160,23 @@ printf_coords:
         retq
 
 
-  main:
-  	pushq   %rbp                # store the old base pointer
-	  movq    %rsp, %rbp          # store current stack pointer as base pointer
-  
-	  # Preparing a simulation of a out_printf call
-	  movq    $5, %rsi            # x = 5
-	  movq    $5, %rdx            # y = 5
-	  movq    $0x0f, %rcx         # black background, white foreground
-	  movq    $-1, %r8
-	  movq    $91, %r9
-	  pushq   $string1
-	  movq    $format, %rdi
-	  call    printf_coords
-  
-	  movq    %rbp, %rsp          # discard local variables
-	  popq    %rbp                # restore the base pointer
-	  retq
+#main:
+#	pushq   %rbp                # store the old base pointer
+#	  movq    %rsp, %rbp          # store current stack pointer as base pointer
+#
+#	  # Preparing a simulation of a out_printf call
+#	  movq    $5, %rsi            # x = 5
+#	  movq    $5, %rdx            # y = 5
+#	  movq    $0x0f, %rcx         # black background, white foreground
+#	  movq    $-1, %r8
+#	  movq    $91, %r9
+#	  pushq   $string1
+#	  movq    $format, %rdi
+#	  call    printf_coords
+#
+#	  movq    %rbp, %rsp          # discard local variables
+#	  popq    %rbp                # restore the base pointer
+#	  retq
   
 # Special cases
 

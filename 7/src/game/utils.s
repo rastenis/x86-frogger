@@ -4,7 +4,7 @@
 
 .section .game.data
 
-clearstring: .asciz "                                                                                   "
+clearstring: .asciz "                                                                                "
 
 screenClear:
 	# Print temp.
@@ -25,7 +25,7 @@ screenClear:
 	call    printf_coords
 
 	incq	%r12				# incrementing wipe counter and jumping back
-	cmpq	$100, %r12
+	cmpq	$25, %r12
 	jle		_clear_loop
 
 	popq	%r12				# restoring 
