@@ -5,13 +5,16 @@
 
 .section .game.data
 
+f: .asciz "%u"
+
+
 .align 16
 menutbl:
-	.skip 8
+	.quad _menu					        # 0 (for gameInit spillover)
 	.quad _menu					        # 1
-	.quad _play_loop          			# 2 - 1 on top row
-	.quad _highscores_loop          	# 3 - 2 on top row
-	.quad quit          				# 4 - 3 on top row
+	.quad _play_loop          			# 2 - 1 on top key row
+	.quad _highscores_loop          	# 3 - 2 on top key row
+	.quad quit          				# 4 - 3 on top key row
 	.skip 251*8
 
 .section .game.text
@@ -19,14 +22,14 @@ menutbl:
 gameInit:
 	# setting program stage to 0, menu.
 	# NOTE: rbx spill over, gameInit is not always first
-	movq	$1,	%rbx
+	movq	$1,	%r12
 	ret
 
 gameLoop:
 	call screenClear	# per-gameloop screen wipe
 
 	# JUMP STAGE: go to the appropriate section of the game loop
-	movq    menutbl(,%rbx,8), %rax   # do the lookup in the jump table
+	movq    menutbl(,%r12,8), %rax   # do the lookup in the jump table
 	testq   %rax, %rax              # check if the current char is a valid action
 	jz      _end_game_loop    # if not, perform the 'unknown' action
 	jmpq    *%rax  

@@ -68,10 +68,10 @@ listenMenu:
 
 	# something pressed:
 	cmpq	$5, %rax	
-	jl		_menu_nothing_pressed	# TODO: this does not work; every key gets written to rbx, not only 1234
+	jg		_menu_nothing_pressed	# TODO: this does not work; every key gets written to rbx, not only 1234
 
 	# setting menu var to pressed key
-	movq	%rax, %rbx
+	movq	%rax, %r12
 
 	_menu_nothing_pressed:
 
