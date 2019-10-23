@@ -213,7 +213,7 @@ logic:
     _logic_arrow_handled:
 
     # 4. Hit detection
-    
+
     movq    (froggerPosX), %r8              # load frogger's x coord into %r8
     movq    (froggerPosY), %r9              # laod frogger's y coord into %r9
 
@@ -228,6 +228,15 @@ logic:
     # TODO: *Game Over*
 
     _logic_no_hit:
+
+    # 5. Level win detection
+
+    cmpq    $0, (froggerPosY)               # compare frogger's y coord with 0
+    jne     _logic_no_win                   # if not zero, no win
+
+    # TODO: *Win Level*
+
+    _logic_no_win:
 
     retq
 
