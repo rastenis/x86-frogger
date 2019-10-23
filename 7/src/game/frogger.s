@@ -24,6 +24,8 @@ generationWritingMax:   .quad 0                             # indicates how many
 generationCarLength:    .quad 0                             # indicates how many pixels a car is
 generationSpaceLength:  .quad 0                             # indicates how many pixels a space is
 generationEmptyLine:    .quad 0                             # indicates if line empty
+generationDirection:    .quad 0                             # indicates direction
+
 
 
 .align 16
@@ -78,7 +80,7 @@ _generate_y:                                # outer loop (y)
     # Get random length for spaces
     call    rng16
     andq    $0x3, %rax
-    incq    %rax                            # now %rax contains a value from 1 to 4 (inclusive)
+    addq    $2, %rax                            # now %rax contains a value from 2 to 5 (inclusive)
     movq    %rax, (generationSpaceLength)
     movq    %rax, (generationWritingMax)
 
@@ -323,7 +325,6 @@ _skip_render:
     retq
 
 
-
 #
 # shift
 #
@@ -343,9 +344,21 @@ shiftAll:
 
 _shiftAll_y:            # outer loop (y)
 
-    # TODO: decide direction
+
+    cmpq    $0, (generationDirection)
+    je      _generation_direction_1
+    
+    decq    (generationDirection)       # next line will be filled
+    jmp     _generation_direction_done
+
+    _generation_direction_1:
+
+    movq    $2, (generationDirection)       # next line will be empty
+
+    _generation_direction_done:
+
+    movq    (generationDirection), %rsi   # direction
     movq    %r12, %rdi  # line no.
-    movq    $1, %rsi    # direction
     call    shiftLine
 
     incq    %r12
