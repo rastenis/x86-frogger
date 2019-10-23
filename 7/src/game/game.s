@@ -26,69 +26,63 @@ gameInit:
     # setting program stage to 0, menu.
     # NOTE: spill over, gameInit is not always first
     movq    $1,	(gameStage)
-    movq    $1,	(stateDirty)
 
-    movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
-    movq    $10, (shiftCeiling)
+    #movq   $2993182, %rdi
+    #call   setTimer
 
-    call    generate
-
-    #movq	$2993182, %rdi
-    #call	setTimer
+    # Set the RNG seed
+    # TODO: set the RNG seed based on the tick in which the user starts the game
+    movq    $29384902834239087, %rdi
+    call    rngSetSeed
 
     retq
 
 gameLoop:
+    call    screenClear	        # clear the screen before each screen update
 
-    pushq   %rbp
-    movq    %rsp, %rbp
+    call    rng16
+    movq    %rax, %r8
 
-    # Decide on the game stage
-    movq	(gameStage), %rax
-    movq    menutbl(,%rax,8), %rax  # do the lookup in the jump table
-    testq   %rax, %rax              # check if the current char is a valid action
-    jz      _stage_handler_done     # if not, act like we did nothing
-    jmpq    *%rax
-
-    _stage_handler_done:
-
-    movq    $0, (stateDirty)        # at the end of the tick, must reset stateDirty, because everything should have been rendered by now
-
-    # Debug tick counter (draw over everything)
+    # Debug tick counter
     movq    $0, %rsi            # x = 0
     movq    $0, %rdx            # y = 0
     movq    $0x0F, %rcx         # black background, white foreground
-    movq    (tick), %r8
+    #movq    (tick), %r8
     movq    $number, %rdi
     call    printf_coords
     incq    (tick)
 
-    movq    %rbp, %rsp
-    popq    %rbp
+    # JUMP STAGE: go to the appropriate section of the game loop
+    movq	(gameStage), %rax
+    movq    menutbl(,%rax,8), %rax  # do the lookup in the jump table
+    testq   %rax, %rax              # check if the current char is a valid action
+    jz      _end_game_loop    		# if not, perform the 'unknown' action
+    jmpq    *%rax  
 
-    retq
-
-#########################
-# Game stage offloaders #
-#########################
-
-    #
-    # MENU STAGE
-    #
+    # MENU STAGE:
     _menu: 
 
-    call    listenMenu              # listen before showing, because a key may have been pressed which makes the state dirty
-    call 	showMenu                # show the actual menu
+    # TEMP 
+    movq	$2, %rdi
+    movq	$2, %rsi
+    call 	setPixelAtScaled
 
-    jmp     _stage_handler_done
+    call 	showMenu
+    call 	listenMenu
 
-    #
-    # PLAY STAGE
-    #
+    jmp _end_game_loop
+
+    # GAME STAGE (play loop instead of game loop for clarity)
     _play_loop:
-    call    logic
-    call    render                  # render the current game state
-    jmp     _stage_handler_done
+    # ... call game loop
+    call generate
+
+    _highscores_loop:
+
+    
+    _end_game_loop:
+
+    retq
 
     #
     # HIGHSCORE STAGE
