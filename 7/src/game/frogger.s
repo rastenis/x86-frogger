@@ -7,6 +7,9 @@
 .section .game.data
 
 gameStateArray: .skip (25*20)	# larger than actual 20x10
+shiftCounter: .skip 8
+shiftCeiling: .skip 8
+
 
 .section .game.text
 
@@ -59,8 +62,24 @@ logic:
     movq    $1, (stateDirty)
 
     # TODO: init level if just landed at this level
+
+
+
     # TODO: check for frogger movement
-    # TODO: handle 'ceiling counter'
+
+    # check shift counter and shift if needed
+    incq    (shiftCounter)
+    movq    (shiftCeiling), %rax
+    cmpq    (shiftCounter), %rax 
+    jne     _logic_no_shift
+
+    movq    $0, (shiftCounter)
+
+
+    # shifting array...
+
+    _logic_no_shift:
+
 
     retq
 

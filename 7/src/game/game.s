@@ -28,6 +28,9 @@ gameInit:
     movq    $1,	(gameStage)
     movq    $1,	(stateDirty)
 
+    movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
+    movq    $50, (shiftCeiling)
+
     #movq	$2993182, %rdi
     #call	setTimer
 
@@ -81,7 +84,6 @@ gameLoop:
     # PLAY STAGE
     #
     _play_loop:
-    #call    generate
     call    logic
     call    render                  # render the current game state
     jmp     _stage_handler_done
