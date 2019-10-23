@@ -179,7 +179,7 @@ _shiftAll_y:            # outer loop (y)
 
     # TODO: decide direction
     movq    %r12, %rdi  # line no.
-    movq    $0, %rsi    # direction
+    movq    $1, %rsi    # direction
     call    shiftLine
 
     incq    %r12
@@ -224,7 +224,6 @@ shiftLine:
         mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y)
         addq    $(STATE_WIDTH - 1), %rax        # add $STATE_WIDTH as the x coord (so now: %rax: cols*y + cols)
         movq    gameStateArray(,%rax, 8), %r10  # finally load it into %r10
-        movq    gameStateArray(,%rax, 8), %r10  # finally load it into %r10
 
         _shiftLine_loop_right:
         
@@ -243,7 +242,6 @@ shiftLine:
         movq    %r8, gameStateArray(,%rax, 8)   # ... and put it at the target
 
         # Loop guard
-        
         cmpq    $0, %r12
         jne     _shiftLine_loop_right
 
@@ -256,9 +254,39 @@ shiftLine:
 
     _shiftLine_left:
 
-        # TODO: implement (finish right shift first)
+        movq    $0, %r12                        # start y at 0
 
+        # Store the left item temporarily (in %r10)
+        movq    $STATE_WIDTH, %rax              # init with the number of columns
+        mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y)
+        movq    gameStateArray(,%rax, 8), %r10  # finally load it into %r10
 
+        _shiftLine_loop_left:
+        
+        # Calculate the target array index
+        movq    $STATE_WIDTH, %rax   # init with STATE_WIDTH as the number of columns
+        mulq    %rdi        # multiply with the current y coord (so: %rdi = STATE_WIDTH*y)
+        addq    %r12, %rax  # add the x coord (so now: %rax = STATE_WIDTH*y + x)
+
+        # Calculate the source array index (source = target - 1)
+        movq    %rax, %r9
+        incq    %r9
+        
+        movq    gameStateArray(,%r9, 8), %r8    # load the source value ...
+        movq    %r8, gameStateArray(,%rax, 8)   # ... and put it at the target
+
+        # Loop guard
+        incq    %r12
+        cmpq    $STATE_WIDTH, %r12
+        jne     _shiftLine_loop_left
+
+        # Store the temporary left item (stored in %r10) in the rightmost slot
+        movq    $STATE_WIDTH, %rax              # init with the number of columns
+        mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y), and x=0
+        addq    $(STATE_WIDTH - 1), %rax        # add $STATE_WIDTH as the x coord (so now: %rax: cols*y + cols)
+        movq    %r10, gameStateArray(,%rax, 8)  # finally store the temporary value back in the leftmost slot
+
+        jmp     _shiftLine_end
 
     _shiftLine_end:
     
