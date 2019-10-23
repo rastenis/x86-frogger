@@ -29,6 +29,9 @@ gameInit:
 	#movq	$2993182, %rdi
 	#call	setTimer
 
+	# initialize gameState
+	call generate
+
 	retq
 
 gameLoop:
@@ -53,11 +56,6 @@ gameLoop:
 	# MENU STAGE:
 	_menu: 
 
-	# TEMP 
-	movq	$2, %rdi
-	movq	$2, %rsi
-	call 	setPixelAtScaled
-
 	call 	showMenu
 	call 	listenMenu
 
@@ -66,7 +64,8 @@ gameLoop:
 	# GAME STAGE (play loop instead of game loop for clarity)
 	_play_loop:
 	# ... call game loop
-	call generate
+	#call generate
+	#call render
 
 	_highscores_loop:
 
