@@ -20,7 +20,7 @@ shiftCeiling:   .skip 8
 levelStarted:   .quad 0                             # indicates if the level has started
 
 .align 16
-logicjmp:
+logictbl:
     .skip 72*8
     .quad _logic_up
     .skip 8*2
@@ -110,13 +110,11 @@ logic:
 
     # 3. Frogger state update (arrow pressing detection)
 
-    # TODO: implement using jump table
-
     call    readKeyCode             # read the current keycode
     cmpq    $0, %rax                # check if pressed anything
     je      _logic_arrow_handled    # if not, skip part 3
 
-    movq    logicjmp(,%rax, 8), %rax# load the handler
+    movq    logictbl(,%rax, 8), %rax# do handler lookup in table
     cmpq    $0, %rax                # check if any handler is in place
     je      _logic_arrow_handled    # if not, skip handler
     # note: handler will set stateDirty if applicable
