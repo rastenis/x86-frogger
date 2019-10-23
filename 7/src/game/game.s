@@ -29,7 +29,7 @@ gameInit:
     movq    $1,	(stateDirty)
 
     movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
-    movq    $50, (shiftCeiling)
+    movq    $10, (shiftCeiling)
 
     call    generate
 

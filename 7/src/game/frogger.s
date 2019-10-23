@@ -6,10 +6,14 @@
 
 .section .game.data
 
-gameStateArray: .skip (30*20)*8 # larger than actual 20x10
-shiftCounter: .skip 8
-shiftCeiling: .skip 8
-levelStarted: .quad 0           # indicates if the level has started
+.equ    STATE_WIDTH, 30
+.equ    STATE_HEIGHT, 10
+.equ    VISIBLE_STATE_WIDTH, 20
+
+gameStateArray: .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
+shiftCounter:   .skip 8
+shiftCeiling:   .skip 8
+levelStarted:   .quad 0                             # indicates if the level has started
 
 .section .game.text
 
@@ -24,24 +28,24 @@ generate:
 
     movq    $0, %r12    # outer loop counter for y coord
 
-_generate_y:            # outer loop (y, 0-9), skipping the bottom row
+_generate_y:            # outer loop (y)
 
     movq    $0, %r13    # inner loop counter for x coord
 
-_generate_x:            # inner loop (x, 0-30)
+_generate_x:            # inner loop (x)
 
     # Set current to 1
-    movq    $30, %rax   # init with 30 as the number of columns
-    mulq    %r12        # multiply with the current y coord (so: %rax = 30*y)
-    addq    %r13, %rax  # add the x coord (so now: %rax = 30*y + x)
+    movq    $STATE_WIDTH, %rax   # init with STATE_WIDTH as the number of columns
+    mulq    %r12        # multiply with the current y coord (so: %rax = STATE_WIDTH*y)
+    addq    %r13, %rax  # add the x coord (so now: %rax = STATE_WIDTH*y + x)
     movq    $1, gameStateArray(,%rax, 8)  # set the space as taken in the gameStateArray
    
     # Loop guards
     incq    %r13
-    cmpq    $30, %r13
+    cmpq    $STATE_WIDTH, %r13
     jne     _generate_x
     incq    %r12
-    cmpq    $9, %r12
+    cmpq    $STATE_HEIGHT, %r12
     jne     _generate_y
 
     # Restore
@@ -64,7 +68,7 @@ logic:
     call    generate                # call the level generator
     
     # TEMP: put a blank space to test shifting impl
-    movq    $0, (gameStateArray + 8*15/*x=15*/ + 30*8*1/*y=1*/)
+    movq    $0, (gameStateArray + 8*15/*x=15*/ + STATE_WIDTH*8*1/*y=1*/)
     
     movq    $1, (levelStarted)      # mark the level as started
     movq    $1, (stateDirty)        # mark the state as dirty
@@ -79,9 +83,10 @@ logic:
     jne     _logic_no_shift
 
     movq    $0, (shiftCounter)
+    movq    $1, (stateDirty)
 
     # shifting array...
-    #call    shiftAll
+    call    shiftAll
 
     _logic_no_shift:
 
@@ -117,9 +122,9 @@ _render_y:              # outer loop (y, 0-9)
 _render_x:              # inner loop (x, 0-19)
 
     # Write pixel if current flag is 1
-    movq    $30, %rax   # init with 30 as the number of columns
-    mulq    %r12        # multiply with the current y coord (so: %rax = 30*y)
-    addq    %r13, %rax  # add the x coord (so now: %rax = 30*y + x)
+    movq    $STATE_WIDTH, %rax   # init with STATE_WIDTH as the number of columns
+    mulq    %r12        # multiply with the current y coord (so: %rax = STATE_WIDTH*y)
+    addq    %r13, %rax  # add the x coord (so now: %rax = STATE_WIDTH*y + x)
     
     movq    gameStateArray(,%rax, 8), %r14
     cmpq    $0, %r14
@@ -134,10 +139,10 @@ _no_render:
    
     # Loop guards
     incq    %r13
-    cmpq    $20, %r13
+    cmpq    $VISIBLE_STATE_WIDTH, %r13
     jne     _render_x
     incq    %r12
-    cmpq    $10, %r12
+    cmpq    $STATE_HEIGHT, %r12
     jne     _render_y
 
     # Restore
@@ -170,7 +175,7 @@ shiftAll:
 
     movq    $0, %r12    # outer loop counter for y coord
 
-_shiftAll_y:            # outer loop (y, 0-9)
+_shiftAll_y:            # outer loop (y)
 
     # TODO: decide direction
     movq    %r12, %rdi  # line no.
@@ -178,8 +183,8 @@ _shiftAll_y:            # outer loop (y, 0-9)
     call    shiftLine
 
     incq    %r12
-    cmpq    $10, %r12
-    jne     _render_y
+    cmpq    $STATE_HEIGHT, %r12
+    jne     _shiftAll_y
 
     # Restore
     movq    %rbp, %rsp
@@ -212,18 +217,23 @@ shiftLine:
 
     _shiftLine_right:
 
-        movq    $30, %r12   # width is 30
+        movq    $STATE_WIDTH, %r12   # width is STATE_WIDTH
 
-        # Store the rightmost item temporarily
-        # TODO
-        #movq    
+        # Store the rightmost item temporarily (in %r10)
+        movq    $STATE_WIDTH, %rax              # init with the number of columns
+        mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y)
+        addq    $(STATE_WIDTH - 1), %rax        # add $STATE_WIDTH as the x coord (so now: %rax: cols*y + cols)
+        movq    gameStateArray(,%rax, 8), %r10  # finally load it into %r10
+        movq    gameStateArray(,%rax, 8), %r10  # finally load it into %r10
 
         _shiftLine_loop_right:
         
+        decq    %r12
+        
         # Calculate the target array index
-        movq    $30, %rax   # init with 30 as the number of columns
-        mulq    %rdi        # multiply with the current y coord (so: %rdi = 30*y)
-        addq    %r12, %rax  # add the x coord (so now: %rax = 30*y + x)
+        movq    $STATE_WIDTH, %rax   # init with STATE_WIDTH as the number of columns
+        mulq    %rdi        # multiply with the current y coord (so: %rdi = STATE_WIDTH*y)
+        addq    %r12, %rax  # add the x coord (so now: %rax = STATE_WIDTH*y + x)
 
         # Calculate the source array index (source = target - 1)
         movq    %rax, %r9
@@ -233,17 +243,22 @@ shiftLine:
         movq    %r8, gameStateArray(,%rax, 8)   # ... and put it at the target
 
         # Loop guard
-        decq    %r12
+        
         cmpq    $0, %r12
         jne     _shiftLine_loop_right
 
-        # TODO: write the original rightmost value to the leftmost slot
+        # Store the temporary rightmost item (stored in %r10) in the leftmost slot
+        movq    $STATE_WIDTH, %rax              # init with the number of columns
+        mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y), and x=0
+        movq    %r10, gameStateArray(,%rax, 8)  # finally store the temporary value back in the leftmost slot
 
         jmp     _shiftLine_end
 
     _shiftLine_left:
 
         # TODO: implement (finish right shift first)
+
+
 
     _shiftLine_end:
     
@@ -252,5 +267,4 @@ shiftLine:
     popq    %r12
     popq    %rbp
     
-
     retq
