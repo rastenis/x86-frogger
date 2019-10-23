@@ -65,7 +65,7 @@ gameLoop:
 	_play_loop:
 	# ... call game loop
 	#call generate
-	#call render
+	call render
 
 	_highscores_loop:
 
