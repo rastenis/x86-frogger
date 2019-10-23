@@ -213,7 +213,21 @@ logic:
     _logic_arrow_handled:
 
     # 4. Hit detection
-    # TODO
+    
+    movq    (froggerPosX), %r8              # load frogger's x coord into %r8
+    movq    (froggerPosY), %r9              # laod frogger's y coord into %r9
+
+    movq    $STATE_WIDTH, %rax              # init with STATE_WIDTH as the number of columns
+    mulq    %r9                             # multiply with frogger's y coord (so: %rax = STATE_WIDTH*y)
+    addq    %r8, %rax                       # add frogger's x coord (so now: %rax = STATE_WIDTH*y + x)
+    movq    gameStateArray(,%rax, 8), %rax  # load the state at the position of frogger
+
+    cmpq    $0, %rax
+    je      _logic_no_hit
+
+    # TODO: *Game Over*
+
+    _logic_no_hit:
 
     retq
 
