@@ -14,11 +14,12 @@
 
 froggerPosX:            .quad 0
 froggerPosY:            .quad 0
+currentLevelFormat:     .asciz "Level: %u"
 gameStateArray:         .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
 shiftCounter:           .quad 0                             # shift counter for the gamestate
 shiftCeiling:           .quad 0                             # shift ceiling for the gamestate
 levelStarted:           .quad 0                             # indicates if the level has started
-levelsCompleted:        .quad 0                             # holds the amount of levels completed
+score:                  .quad 0                             # holds the score (amount of completed levels)
 generationWritingCar:   .quad 0                             # indicates if we are writing a car currently
 generationWritingCount: .quad 0                             # indicates how many pixels of the thing we have written
 generationWritingMax:   .quad 0                             # indicates how many pixels of the thing we have to write total
@@ -233,7 +234,7 @@ logic:
     # - store score in highscores list
     movq    $1, (gameStage)                 # switch game stage to menu
     movq    $1, (switchStage)               # indicate that we're switching stage (makes sure the menu actually appears)
-    movq    $0, (levelsCompleted)           # reset the amount of completed levels
+    movq    $0, (score)                     # reset the score
     movq    $0, (levelStarted)              # reset the levelStarted flag
 
     _logic_no_hit:
@@ -243,7 +244,7 @@ logic:
     cmpq    $0, (froggerPosY)               # compare frogger's y coord with 0
     jne     _logic_no_win                   # if not zero, no win
 
-    incq    (levelsCompleted)               # increase the number of completed levels
+    incq    (score)                         # increase the score
     movq    $0, (levelStarted)              # mark level to be restarted
     movq    $1, (stateDirty)                # screen needs to be redrawn
 
@@ -305,6 +306,15 @@ render:
 
     # Clear the screen, because we're going to draw something new
     call    screenClear
+
+    # 1. Display the current level in the top left corner
+    movq    $0, %rsi            # x = 0
+    movq    $0, %rdx            # y = 0
+    movq    $0x03, %rcx         # black background, cyan foreground
+    movq    (score), %r8        # load the score as the format value
+    incq    %r8                 # current level is score+1
+    movq    $currentLevelFormat, %rdi
+    call    printf_coords
 
     # 2. Render the cars
 
@@ -494,18 +504,4 @@ shiftLine:
         jne     _shiftLine_loop_left
 
         # Store the temporary left item (stored in %r10) in the rightmost slot
-        movq    $STATE_WIDTH, %rax              # init with the number of columns
-        mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y), and x=0
-        addq    $(STATE_WIDTH - 1), %rax        # add $STATE_WIDTH as the x coord (so now: %rax: cols*y + cols)
-        movq    %r10, gameStateArray(,%rax, 8)  # finally store the temporary value back in the leftmost slot
-
-        jmp     _shiftLine_end
-
-    _shiftLine_end:
-    
-    # Restore
-    movq    %rbp, %rsp
-    popq    %r12
-    popq    %rbp
-    
-    retq
+        movq    $STATE_WIDTH, %rax              # init wi

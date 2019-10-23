@@ -69,7 +69,7 @@ gameLoop:
 
     # Debug tick counter (draw over everything)
     movq    $0, %rsi            # x = 0
-    movq    $0, %rdx            # y = 0
+    movq    $24, %rdx           # y = 24
     movq    $0x0F, %rcx         # black background, white foreground
     movq    (tick), %r8
     movq    $number, %rdi
