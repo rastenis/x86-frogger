@@ -9,8 +9,12 @@
 .equ    STATE_WIDTH, 30
 .equ    STATE_HEIGHT, 10
 .equ    VISIBLE_STATE_WIDTH, 20
+.equ    FROGGER_START_POS_X, 10
+.equ    FROGGER_START_POS_Y, 11
 
 gameStateArray: .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
+froggerPosX:    .quad 0
+froggerPosY:    .quad 0
 shiftCounter:   .skip 8
 shiftCeiling:   .skip 8
 levelStarted:   .quad 0                             # indicates if the level has started
@@ -62,34 +66,39 @@ _generate_x:            # inner loop (x)
 # Core game logic handler. May set stateDirty to indicate that the screen needs to be redrawn.
 #
 logic:
+
+    # 1. Level initialization
+
     # Initiate the level if not initiated yet
     cmpq    $0, (levelStarted)      # compare the levelStarted flag
     jne     _level_generated        # skip if the current level has already been generated
     call    generate                # call the level generator
     
-    # TEMP: put a blank space to test shifting impl
-    movq    $0, (gameStateArray + 8*15/*x=15*/ + STATE_WIDTH*8*1/*y=1*/)
+    movq    $FROGGER_START_POS_X, (froggerPosX) # reset frogger's X position
+    movq    $FROGGER_START_POS_Y, (froggerPosY) # reset frogger's Y position
     
     movq    $1, (levelStarted)      # mark the level as started
     movq    $1, (stateDirty)        # mark the state as dirty
     _level_generated:
 
-    # TODO: check for frogger movement
+    # 2. Game state shifting
 
     # check shift counter and shift if needed
-    incq    (shiftCounter)
-    movq    (shiftCeiling), %rax
-    cmpq    (shiftCounter), %rax 
-    jne     _logic_no_shift
+    incq    (shiftCounter)          # increase the shift counter
+    movq    (shiftCeiling), %rax    # load the shift ceiling
+    cmpq    %rax, (shiftCounter)    # compare the shift counter value to the shift ceiling
+    jl      _logic_no_shift         # don't shift if we haven't reached the ceiling yet
 
-    movq    $0, (shiftCounter)
-    movq    $1, (stateDirty)
+    movq    $0, (shiftCounter)      # clear the shift counter
+    movq    $1, (stateDirty)        # mark the state as dirty, because we're shifting the game state
 
-    # shifting array...
-    call    shiftAll
+    call    shiftAll                # do the game state shifting
 
     _logic_no_shift:
 
+    # 3. Frogger state update
+
+    # TODO
 
     retq
 
@@ -112,6 +121,8 @@ render:
 
     # Clear the screen, because we're going to draw something new
     call    screenClear
+
+    # 2. Render the cars
 
     movq    $0, %r12    # outer loop counter for y coord
 
@@ -136,7 +147,7 @@ _render_x:              # inner loop (x, 0-19)
     call    setPixelAtScaled
 
 _no_render:
-   
+
     # Loop guards
     incq    %r13
     cmpq    $VISIBLE_STATE_WIDTH, %r13
@@ -144,6 +155,13 @@ _no_render:
     incq    %r12
     cmpq    $STATE_HEIGHT, %r12
     jne     _render_y
+
+    # 3. Render FROGGAR
+
+    movq    (froggerPosX), %rdi     # load frogger's X position
+    movq    (froggerPosY), %rsi     # load frogger's Y position
+    movq    $0x20, %rdx             # color info: bg=green, fg=black
+    call    setPixelAtScaledColor   # draw the frogger as a scaled pixel with custom color
 
     # Restore
     movq    %rbp, %rsp

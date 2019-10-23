@@ -8,7 +8,7 @@
 f: .asciz "%u"
 tick: .quad 0
 gameStage: .skip 8
-stateDirty: .skip 8                     # rendering flag
+stateDirty: .quad 0                     # rendering flag
 number: .asciz "%u"
 
 .align 16
@@ -27,8 +27,13 @@ gameInit:
     # NOTE: spill over, gameInit is not always first
     movq    $1,	(gameStage)
 
-    #movq   $2993182, %rdi
-    #call   setTimer
+    movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
+    movq    $500, (shiftCeiling)
+
+    call    generate
+
+    #movq	$2993182, %rdi
+    #call	setTimer
 
     # Set the RNG seed
     # TODO: set the RNG seed based on the tick in which the user starts the game
