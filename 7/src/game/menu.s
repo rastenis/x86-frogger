@@ -82,9 +82,9 @@ listenMenu:
     je      _menu_nothing_pressed
 
     # setting menu var to pressed key
-    movq    %rax, (gameStage)
-    movq    $1, (stateDirty)
+    movq    %rax, (gameStage)   # load the key as the game stage
+    movq    $1, (switchStage)   # indicate that we switched stages
 
     _menu_nothing_pressed:
 
-    ret
+    retq

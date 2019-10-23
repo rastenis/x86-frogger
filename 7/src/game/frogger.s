@@ -18,6 +18,7 @@ gameStateArray:         .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual
 shiftCounter:           .quad 0                             # shift counter for the gamestate
 shiftCeiling:           .quad 0                             # shift ceiling for the gamestate
 levelStarted:           .quad 0                             # indicates if the level has started
+levelsCompleted:        .quad 0                             # holds the amount of levels completed
 generationWritingCar:   .quad 0                             # indicates if we are writing a car currently
 generationWritingCount: .quad 0                             # indicates how many pixels of the thing we have written
 generationWritingMax:   .quad 0                             # indicates how many pixels of the thing we have to write total
@@ -205,7 +206,7 @@ logic:
     je      _logic_arrow_handled    # if not, skip part 3
 
     movq    logictbl(,%rax, 8), %rax# do handler lookup in table
-    cmpq    $0, %rax                # check if any handler is in place
+    testq   %rax, %rax              # check if any handler is in place
     je      _logic_arrow_handled    # if not, skip handler
     # note: handler will set stateDirty if applicable
     jmp     *%rax                   # jump to handler
@@ -215,17 +216,25 @@ logic:
     # 4. Hit detection
 
     movq    (froggerPosX), %r8              # load frogger's x coord into %r8
-    movq    (froggerPosY), %r9              # laod frogger's y coord into %r9
+    movq    (froggerPosY), %r9              # load frogger's y coord into %r9
+    cmpq    $STATE_HEIGHT, %r9              # compare frogger's y coord to the state height
+    jge     _logic_no_hit                   # if y >= STATE_HEIGHT, then frogger can't have hit anything
 
     movq    $STATE_WIDTH, %rax              # init with STATE_WIDTH as the number of columns
     mulq    %r9                             # multiply with frogger's y coord (so: %rax = STATE_WIDTH*y)
     addq    %r8, %rax                       # add frogger's x coord (so now: %rax = STATE_WIDTH*y + x)
     movq    gameStateArray(,%rax, 8), %rax  # load the state at the position of frogger
 
-    cmpq    $0, %rax
-    je      _logic_no_hit
+    testq   %rax, %rax                      # check if we hit something
+    jz      _logic_no_hit                   # if not, skip the game over logic
 
     # TODO: *Game Over*
+    # - display final score (?)
+    # - store score in highscores list
+    movq    $1, (gameStage)                 # switch game stage to menu
+    movq    $1, (switchStage)               # indicate that we're switching stage (makes sure the menu actually appears)
+    movq    $0, (levelsCompleted)           # reset the amount of completed levels
+    movq    $0, (levelStarted)              # reset the levelStarted flag
 
     _logic_no_hit:
 
@@ -234,7 +243,9 @@ logic:
     cmpq    $0, (froggerPosY)               # compare frogger's y coord with 0
     jne     _logic_no_win                   # if not zero, no win
 
-    # TODO: *Win Level*
+    incq    (levelsCompleted)               # increase the number of completed levels
+    movq    $0, (levelStarted)              # mark level to be restarted
+    movq    $1, (stateDirty)                # screen needs to be redrawn
 
     _logic_no_win:
 

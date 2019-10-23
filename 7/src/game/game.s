@@ -5,11 +5,12 @@
 
 .section .game.data
 
-f: .asciz "%u"
-tick: .quad 0
-gameStage: .skip 8
+f:          .asciz "%u"
+tick:       .quad 0
+gameStage:  .quad 0
 stateDirty: .quad 0                     # rendering flag
-number: .asciz "%u"
+switchStage:.quad 0                     # set to 1 if switching stages
+number:     .asciz "%u"
 
 .align 16
 menutbl:
@@ -45,7 +46,28 @@ gameInit:
 gameLoop:
     call    screenClear	        # clear the screen before each screen update
 
-    # Debug tick counter
+    pushq   %rbp
+    movq    %rsp, %rbp
+
+    # Set stateDirty if we just switched the stage
+    cmpq    $0, (switchStage)
+    je      _gameLoop_no_stage_switch
+    movq    $1, (stateDirty)
+    movq    $0, (switchStage)
+    _gameLoop_no_stage_switch:
+
+    # Decide on the game stage
+    movq	(gameStage), %rax
+    movq    menutbl(,%rax,8), %rax  # do the lookup in the jump table
+    testq   %rax, %rax              # check if the current char is a valid action
+    jz      _stage_handler_done     # if not, act like we did nothing
+    jmpq    *%rax
+
+    _stage_handler_done:
+
+    movq    $0, (stateDirty)        # at the end of the tick, must reset stateDirty, because everything should have been rendered by now
+
+    # Debug tick counter (draw over everything)
     movq    $0, %rsi            # x = 0
     movq    $0, %rdx            # y = 0
     movq    $0x0F, %rcx         # black background, white foreground
