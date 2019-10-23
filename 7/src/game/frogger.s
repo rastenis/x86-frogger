@@ -12,12 +12,19 @@
 .equ    FROGGER_START_POS_X, 10
 .equ    FROGGER_START_POS_Y, 11
 
-gameStateArray: .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
-froggerPosX:    .quad 0
-froggerPosY:    .quad 0
-shiftCounter:   .skip 8
-shiftCeiling:   .skip 8
-levelStarted:   .quad 0                             # indicates if the level has started
+froggerPosX:            .quad 0
+froggerPosY:            .quad 0
+gameStateArray:         .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
+shiftCounter:           .quad 0                             # shift counter for the gamestate
+shiftCeiling:           .quad 0                             # shift ceiling for the gamestate
+levelStarted:           .quad 0                             # indicates if the level has started
+generationWritingCar:   .quad 0                             # indicates if we are writing a car currently
+generationWritingCount: .quad 0                             # indicates how many pixels of the thing we have written
+generationWritingMax:   .quad 0                             # indicates how many pixels of the thing we have to write total
+generationCarLength:    .quad 0                             # indicates how many pixels a car is
+generationSpaceLength:  .quad 0                             # indicates how many pixels a space is
+generationEmptyLine:    .quad 0                             # indicates if line empty
+
 
 .align 16
 logictbl:
@@ -42,20 +49,97 @@ generate:
     pushq   %r13
     movq    %rsp, %rbp
 
-    movq    $0, %r12    # outer loop counter for y coord
+    movq    $1, (generationEmptyLine)       # first line empty (finish)
 
-_generate_y:            # outer loop (y)
+    movq    $0, %r12                        # outer loop counter for y coord
 
-    movq    $0, %r13    # inner loop counter for x coord
+_generate_y:                                # outer loop (y)
 
-_generate_x:            # inner loop (x)
 
-    # Set current to 1
-    movq    $STATE_WIDTH, %rax   # init with STATE_WIDTH as the number of columns
-    mulq    %r12        # multiply with the current y coord (so: %rax = STATE_WIDTH*y)
-    addq    %r13, %rax  # add the x coord (so now: %rax = STATE_WIDTH*y + x)
-    movq    $1, gameStateArray(,%rax, 8)  # set the space as taken in the gameStateArray
+    # checking if this line has to be written or empty
+    cmpq    $0, (generationEmptyLine)
+    je      _generation_write_line
+
+    incq    %r12                            # move to next line
+    movq    $0, (generationEmptyLine)       # next line will be filled
+
+    _generation_write_line:
+
+    movq    $1, (generationEmptyLine)       # next line will be empty
+
+    movq    $0, %r13                        # inner loop counter for x coord
+
+    # Get random length for cars
+    call    rng16
+    andq    $0x3, %rax
+    incq    %rax                            # now %rax contains a value from 1 to 4 (inclusive)
+    movq    %rax, (generationCarLength)
+
+    # Get random length for spaces
+    call    rng16
+    andq    $0x3, %rax
+    incq    %rax                            # now %rax contains a value from 1 to 4 (inclusive)
+    movq    %rax, (generationSpaceLength)
+    movq    %rax, (generationWritingMax)
+
+    movq    $0, (generationWritingCar)      # we're starting by writing a space
+    movq    $0, (generationWritingCount)
+
+_generate_x:                                # inner loop (x)
+  
+
+    # wriitng either a part of car or space
+    cmpq    $1, (generationWritingCar)
+    je      _generation_writing_car
+
+    _generation_writing_space:
+
+    # Set current to 0 (space)
+    movq    $STATE_WIDTH, %rax              # init with STATE_WIDTH as the number of columns
+    mulq    %r12                            # multiply with the current y coord (so: %rax = STATE_WIDTH*y)
+    addq    %r13, %rax                      # add the x coord (so now: %rax = STATE_WIDTH*y + x)
+    movq    $0, gameStateArray(,%rax, 8)    # set the space as taken in the gameStateArray
    
+    jmp _generation_done_writing
+
+    _generation_writing_car:
+
+    # Set current to 1 (car)
+    movq    $STATE_WIDTH, %rax              # init with STATE_WIDTH as the number of columns
+    mulq    %r12                            # multiply with the current y coord (so: %rax = STATE_WIDTH*y)
+    addq    %r13, %rax                      # add the x coord (so now: %rax = STATE_WIDTH*y + x)
+    movq    $1, gameStateArray(,%rax, 8)    # set the space as taken in the gameStateArray
+
+    _generation_done_writing:
+
+
+    incq    generationWritingCount          # inc the generationWriting count
+    movq    (generationWritingMax), %r8
+    cmpq    %r8,(generationWritingCount)    # if everything is written, switch. If not, don't 
+    jl      _generation_no_switch
+
+    # Toggling car/space
+    cmpq    $0, (generationWritingCar) 
+    je      _generation_toggle_car
+
+    _generation_toggle_space:
+
+    movq    $0, (generationWritingCar)      # we're gonna be writing a space next
+    movq    $0, (generationWritingCount)
+    movq    (generationSpaceLength), %r8
+    movq    %r8, (generationWritingMax)
+
+    jmp _generation_no_switch
+
+    _generation_toggle_car:
+
+    movq    $1, (generationWritingCar)      # we're gonna be writing a car next
+    movq    $0, (generationWritingCount)
+    movq    (generationCarLength), %r8
+    movq    %r8, (generationWritingMax)
+
+    _generation_no_switch:
+
     # Loop guards
     incq    %r13
     cmpq    $STATE_WIDTH, %r13
@@ -84,6 +168,10 @@ logic:
     # Initiate the level if not initiated yet
     cmpq    $0, (levelStarted)      # compare the levelStarted flag
     jne     _level_generated        # skip if the current level has already been generated
+
+    movq    (tick), %rdi
+    call    rngSetSeed
+
     call    generate                # call the level generator
     
     movq    $FROGGER_START_POS_X, (froggerPosX) # reset frogger's X position

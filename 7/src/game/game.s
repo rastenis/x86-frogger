@@ -30,7 +30,7 @@ gameInit:
     movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
     movq    $50, (shiftCeiling)
 
-    call    generate
+    #call    generate
 
     #movq	$2993182, %rdi
     #call	setTimer
