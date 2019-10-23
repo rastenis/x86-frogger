@@ -49,11 +49,30 @@ _generate_x:         	# inner loop (x, 0-19)
 
     ret
 
+#
+# logic
+#
+# Core game logic handler. May set stateDirty to indicate that the screen needs to be redrawn.
+#
+logic:
+    # TEMP: always mark screen dirty
+    movq    $1, (stateDirty)
 
+    # TODO: init level if just landed at this level
+    # TODO: check for frogger movement
+    # TODO: handle 'ceiling counter'
+
+    retq
+
+#
+# render
+#
+# Core game state rendering.
+#
 render: 
 
-    cmpw	$0, (renderNext)
-    je      _skip_render
+    cmpq	$0, (stateDirty)
+    je		_skip_render
 
     # Preserve registers
     pushq   %rbp
@@ -61,6 +80,9 @@ render:
     pushq   %r13
     pushq   %r14
     movq    %rsp, %rbp
+
+    # Clear the screen, because we're going to draw something new
+    call	screenClear
 
     movq    $0, %r12    # outer loop counter for y coord
 
