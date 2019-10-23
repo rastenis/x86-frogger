@@ -40,14 +40,11 @@ gameInit:
 gameLoop:
     call    screenClear	        # clear the screen before each screen update
 
-    call    rng16
-    movq    %rax, %r8
-
     # Debug tick counter
     movq    $0, %rsi            # x = 0
     movq    $0, %rdx            # y = 0
     movq    $0x0F, %rcx         # black background, white foreground
-    #movq    (tick), %r8
+    movq    (tick), %r8
     movq    $number, %rdi
     call    printf_coords
     incq    (tick)
