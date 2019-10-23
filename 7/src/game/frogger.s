@@ -13,11 +13,11 @@ gameStateArray: .skip (25*20)	# larger than actual 20x10
 # Generate the initial gamestate
 generate: 
 
-	# Preserve registers
-	pushq   %rbp
+    # Preserve registers
+    pushq   %rbp
     pushq   %r12
     pushq   %r13
-	movq    %rsp, %rbp
+    movq    %rsp, %rbp
 
     movq    $0, %r12    # outer loop counter for y coord
 
@@ -27,8 +27,8 @@ _generate_y:         	# outer loop (y, 0-9)
 
 _generate_x:         	# inner loop (x, 0-19)
 
-	# Set current to 1
-	movq    $25, %rax   # init with 20 as the number of columns
+    # Set current to 1
+    movq    $25, %rax   # init with 20 as the number of columns
     mulq    %r12        # multiply with the current y coord (so: %rax = 20*y)
     addq    %r13, %rax  # add the x coord (so now: %rax = 20*y + x)
     movb    $1, (gameStateArray)(,%rax, 1)  # set the space as taken in the gameStateArray
@@ -47,17 +47,20 @@ _generate_x:         	# inner loop (x, 0-19)
     popq    %r12
     popq    %rbp
 
-	ret
+    ret
 
 
 render: 
 
-	# Preserve registers
-	pushq   %rbp
+    cmpw	$0, (renderNext)
+    je      _skip_render
+
+    # Preserve registers
+    pushq   %rbp
     pushq   %r12
     pushq   %r13
     pushq   %r14
-	movq    %rsp, %rbp
+    movq    %rsp, %rbp
 
     movq    $0, %r12    # outer loop counter for y coord
 
@@ -67,20 +70,20 @@ _render_y:         	# outer loop (y, 0-9)
 
 _render_x:         	# inner loop (x, 0-19)
 
-	# Write pixel if current flag is 1
-	movq    $20, %rax   # init with 20 as the number of columns
+    # Write pixel if current flag is 1
+    movq    $20, %rax   # init with 20 as the number of columns
     mulq    %r12        # multiply with the current y coord (so: %rax = 20*y)
     addq    %r13, %rax  # add the x coord (so now: %rax = 20*y + x)
-	
-	movq	$0, %r14
-	movb	(gameStateArray)(%rax), %r14b
-	cmpq	$0, %r14
-	je		_no_render
+    
+    movq	$0, %r14
+    movb	(gameStateArray)(%rax), %r14b
+    cmpq	$0, %r14
+    je		_no_render
 
-	# Write pixel at virtual resolion x and y
-	movq	%r13, %rdi
-	movq	%r12, %rsi
-	call 	setPixelAtScaled
+    # Write pixel at virtual resolion x and y
+    movq	%r13, %rdi
+    movq	%r12, %rsi
+    call 	setPixelAtScaled
 
 _no_render:
    
@@ -99,4 +102,6 @@ _no_render:
     popq    %r12
     popq    %rbp
 
-	ret
+_skip_render:
+
+    ret

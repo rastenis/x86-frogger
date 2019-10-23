@@ -17,6 +17,9 @@ format: .asciz "%s"
 
 showMenu:
 
+    cmpw	$0, (renderNext)
+    je      _skip_menu
+
 	# Print the title
 	movq    $32, %rsi           # x = 32
 	movq    $7, %rdx            # y = 7
@@ -61,6 +64,8 @@ showMenu:
 	movq    $format, %rdi
 	call    printf_coords
 
+	_skip_menu:
+
 	ret
 
 listenMenu:
@@ -68,10 +73,11 @@ listenMenu:
 
 	# something pressed:
 	cmpq	$5, %rax	
-	jg		_menu_nothing_pressed	# TODO: this does not work; every key gets written to rbx, not only 1234
+	jg		_menu_nothing_pressed	
 
 	# setting menu var to pressed key
 	movq	%rax, (gameStage)
+	movq	$1, (renderNext)
 
 	_menu_nothing_pressed:
 
