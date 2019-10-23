@@ -19,6 +19,18 @@ shiftCounter:   .skip 8
 shiftCeiling:   .skip 8
 levelStarted:   .quad 0                             # indicates if the level has started
 
+.align 16
+logicjmp:
+    .skip 72*8
+    .quad _logic_up
+    .skip 8*2
+    .quad _logic_left
+    .skip 8*1
+    .quad _logic_right
+    .skip 8*2
+    .quad _logic_down
+    .skip (256-144)*8
+
 .section .game.text
 
 # Generate the initial gamestate
@@ -96,11 +108,61 @@ logic:
 
     _logic_no_shift:
 
-    # 3. Frogger state update
+    # 3. Frogger state update (arrow pressing detection)
 
+    # TODO: implement using jump table
+
+    call    readKeyCode             # read the current keycode
+    cmpq    $0, %rax                # check if pressed anything
+    je      _logic_arrow_handled    # if not, skip part 3
+
+    movq    logicjmp(,%rax, 8), %rax# load the handler
+    cmpq    $0, %rax                # check if any handler is in place
+    je      _logic_arrow_handled    # if not, skip handler
+    # note: handler will set stateDirty if applicable
+    jmp     *%rax                   # jump to handler
+
+    _logic_arrow_handled:
+
+    # 4. Hit detection
     # TODO
 
     retq
+
+# Handlers for the arrow logic
+_logic_up:
+    # bounds (y >= 0)
+    cmpq    $0, (froggerPosY)
+    je      _logic_arrow_handled
+    # y--
+    movq    $1, (stateDirty)
+    decq    (froggerPosY)
+    jmp     _logic_arrow_handled
+_logic_down:
+    # bounds (y < STATE_HEIGHT + 2)
+    # +2 because player has 2 rows of space at the bottom
+    cmpq    $(STATE_HEIGHT + 2 - 1), (froggerPosY)
+    je      _logic_arrow_handled
+    # y++
+    movq    $1, (stateDirty)
+    incq    (froggerPosY)
+    jmp     _logic_arrow_handled
+_logic_left:
+    # bounds (x >= 0)
+    cmpq    $0, (froggerPosX)
+    je      _logic_arrow_handled
+    # x--
+    movq    $1, (stateDirty)
+    decq    (froggerPosX)
+    jmp     _logic_arrow_handled
+_logic_right:
+    # bounds (x < VISIBLE_STATE_WIDTH)
+    cmpq    $(VISIBLE_STATE_WIDTH - 1), (froggerPosX)
+    je      _logic_arrow_handled
+    # x++
+    movq    $1, (stateDirty)
+    incq    (froggerPosX)
+    jmp     _logic_arrow_handled
 
 #
 # render

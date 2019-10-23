@@ -28,7 +28,7 @@ gameInit:
     movq    $1,	(gameStage)
 
     movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
-    movq    $500, (shiftCeiling)
+    movq    $50, (shiftCeiling)
 
     call    generate
 
