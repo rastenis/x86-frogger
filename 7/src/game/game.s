@@ -125,7 +125,7 @@ quit:
     # QEMU-specific shutdown implementation
     movq    $0x604, %rdx            # address
     movq    $0x2000, %rax           # 0x2000 as data
-    outw    %ax, %dx                # indicate that we want to write to VGA BIOS config address 0xA
+    outw    %ax, %dx
 
     # Change to menu just to be sure if this didn't work
     movq    $1, (gameStage)

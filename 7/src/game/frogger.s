@@ -366,6 +366,7 @@ render:
     call    screenClear
 
     # 1. Display the current level in the top left corner
+
     movq    $0, %rsi            # x = 0
     movq    $0, %rdx            # y = 0
     movq    $0x03, %rcx         # black background, cyan foreground
