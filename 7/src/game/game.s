@@ -31,15 +31,16 @@ gameInit:
     movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
     movq    $50, (shiftCeiling)
 
-    #call    generate
-
     #movq	$2993182, %rdi
     #call	setTimer
 
-    # Set the RNG seed
-    # TODO: set the RNG seed based on the tick in which the user starts the game
-    movq    $29384902834239087, %rdi
-    call    rngSetSeed
+    # Disable the blinking cursor
+    movq    $0x3D4, %rdx            # address port
+    movq    $0xA, %rax              # 0xA is the cursor config
+    outb    %al, %dx                # indicate that we want to write to VGA BIOS config address 0xA
+    incq    %rdx                    # increase port address to the VGA BIOS data
+    movq    $0x20, %rax             # 0x20 is bit 5 set, which means: disable cursor
+    outb    %al, %dx                # write the value to the VGA BIOS config
 
     retq
 
@@ -81,41 +82,4 @@ gameLoop:
     movq    menutbl(,%rax,8), %rax  # do the lookup in the jump table
     testq   %rax, %rax              # check if the current char is a valid action
     jz      _end_game_loop    		# if not, perform the 'unknown' action
-    jmpq    *%rax  
-
-    # MENU STAGE:
-    _menu: 
-
-    # TEMP 
-    movq	$2, %rdi
-    movq	$2, %rsi
-    call 	setPixelAtScaled
-
-    call 	showMenu
-    call 	listenMenu
-
-    jmp _end_game_loop
-
-    # GAME STAGE (play loop instead of game loop for clarity)
-    _play_loop:
-    # ... call game loop
-    call generate
-
-    _highscores_loop:
-
-    
-    _end_game_loop:
-
-    retq
-
-    #
-    # HIGHSCORE STAGE
-    #
-    _highscores_loop:
-    # TODO
-    jmp     _stage_handler_done
-
-quit:
-    # TODO: close qemu?
-    # TEMP:
-    jmp     _stage_handler_done
+    jmpq 
