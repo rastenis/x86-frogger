@@ -36,12 +36,23 @@ showHighscores:
     movq    $format, %rdi
     call    printf_coords
 
+    # Print the exit notification
+    movq    $27, %rsi           
+    movq    $20, %rdx            
+    movq    $0x0f, %rcx             # black background, white foreground
+    movq   	$highscoresstring2, %r8
+    movq    $format, %rdi
+    call    printf_coords
+   
+    cmpq    $0, (highscoreCurrent)
+    je      _skip_highscores        # nothing to show
+
     # Print all scores
     movq    $0, %r12
 
     _highscores_print_next:
 
-    # Print a single highscore
+    # Print a single highscore in the format:  (index). (score)
     movq    $6, %rax
     addq    %r12, %rax
     movq    $32, %rsi           
@@ -52,21 +63,12 @@ showHighscores:
     movq    $highscoresstring3, %rdi
     call    printf_coords
 
+    # Looper for printing all highscores
     incq    %r12
     cmpq    %r12, (highscoreCurrent)
     jne     _highscores_print_next
 
-    # Print the exit notification
-    movq    $27, %rsi           # x = 32
-    movq    $20, %rdx            # y = 7
-    movq    $0x0f, %rcx         # black background, white foreground
-    movq   	$highscoresstring2, %r8
-    movq    $format, %rdi
-    call    printf_coords
-   
-
     _skip_highscores:
-
 
     movq    %rbp, %rsp
     popq    %r12
@@ -88,4 +90,3 @@ listenHighscores:
     _highscores_nothing_pressed:
 
     retq
-

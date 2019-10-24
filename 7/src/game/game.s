@@ -29,6 +29,7 @@ gameInit:
     movq    $1,	(gameStage)
 
     movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
+    movq    $0, (highscoreCurrent)     
     movq    $50, (shiftCeiling)
 
     #movq	$2993182, %rdi
