@@ -6,7 +6,7 @@
 
 menustring1: .asciz "Frogger v0.0.1"
 menustring2: .asciz "      By:"
-menustring3: .asciz "   xx and xx"
+menustring3: .asciz "Matas Rastenis and Jochem Broekhoff"
 menustring4: .asciz "1) Start game"
 menustring5: .asciz "2) Highscores"
 menustring6: .asciz "3) Quit"
@@ -40,7 +40,7 @@ showMenu:
     movq    $format, %rdi
     call    printf_coords
     # Print the author data 2
-    movq    $32, %rsi           # x = 32
+    movq    $23, %rsi           # x = 32
     movq    $9, %rdx            # y = 9
     movq    $0x0f, %rcx         # black background, white foreground
     movq   	$menustring3, %r8
