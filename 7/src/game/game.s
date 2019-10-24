@@ -83,3 +83,48 @@ gameLoop:
     testq   %rax, %rax              # check if the current char is a valid action
     jz      _end_game_loop    		# if not, perform the 'unknown' action
     jmpq 
+    movq    %rbp, %rsp
+    popq    %rbp
+
+    retq
+
+#########################
+# Game stage offloaders #
+#########################
+
+    #
+    # MENU STAGE
+    #
+    _menu: 
+
+    call    listenMenu              # listen before showing, because a key may have been pressed which makes the state dirty
+    call 	showMenu                # show the actual menu
+
+    jmp     _stage_handler_done
+
+    #
+    # PLAY STAGE
+    #
+    _play_loop:
+    call    logic
+    call    render                  # render the current game state
+    jmp     _stage_handler_done
+
+    #
+    # HIGHSCORE STAGE
+    #
+    _highscores_loop:
+    # TODO
+    jmp     _stage_handler_done
+
+quit:
+    # QEMU-specific shutdown implementation
+    movq    $0x604, %rdx            # address
+    movq    $0x2000, %rax           # 0x2000 as data
+    outw    %ax, %dx                # indicate that we want to write to VGA BIOS config address 0xA
+
+    # Change to menu just to be sure if this didn't work
+    movq    $1, (gameStage)
+    movq    $1, (switchStage)
+
+    jmp     _stage_handler_done
