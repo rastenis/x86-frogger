@@ -233,8 +233,13 @@ logic:
     testq   %rax, %rax                      # check if we hit something
     jz      _logic_no_hit                   # if not, skip the game over logic
 
-    # TODO: *Game Over*
-    # - store score in highscores list
+    # 4. Game over 
+    
+    # Storing score
+    movq    (highscoreCurrent), %rax   
+    movq    (score), %r8 
+    movq    %r8, highscoreArray(,%rax, 8)    # set the high score
+    incq    (highscoreCurrent)              # increment highscore count
 
     # Performing death animation
     movq    $0, %r12     
