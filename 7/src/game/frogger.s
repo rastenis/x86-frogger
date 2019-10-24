@@ -253,13 +253,32 @@ logic:
     cmpq    $999999999, %r12                # waiting for a lot of cycles to complete
     jle     _death_anim
 
+
+    # Performing score animation
+    movq    $0, %r12     
+
+    call    screenClear                     # clearing dead frogger
+
+    # Draw final score
+    movq    $35, %rsi                       # x = 35
+    movq    $11, %rdx                       # y = 11
+    movq    $0x0F, %rcx                     # 
+    movq    (score), %r8                    # 
+    movq    $currentScoreFormat, %rdi
+    call    printf_coords
+
+    _score_anim:
+    incq    %r12
+
+    cmpq    $999999999, %r12                # waiting for a lot of cycles to complete
+    jle     _score_anim
+
     movq    $1, (gameStage)                 # switch game stage to menu
     movq    $1, (switchStage)               # indicate that we're switching stage (makes sure the menu actually appears)
     movq    $0, (score)                     # reset the score
     movq    $0, (levelStarted)              # reset the levelStarted flag
     movq    $50, (shiftCeiling)             # reset the tick ceiling to default
-
-
+    
     _logic_no_hit:
 
     # 5. Level win detection
