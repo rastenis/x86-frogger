@@ -235,6 +235,8 @@ logic:
     movq    $1, (switchStage)               # indicate that we're switching stage (makes sure the menu actually appears)
     movq    $0, (score)                     # reset the score
     movq    $0, (levelStarted)              # reset the levelStarted flag
+    movq    $50, (shiftCeiling)             # reset the tick ceiling to default
+
 
     _logic_no_hit:
 
@@ -244,6 +246,14 @@ logic:
     jne     _logic_no_win                   # if not zero, no win
 
     incq    (score)                         # increase the score
+
+    cmpq    $1, (shiftCeiling)              # prevent underflow
+    je      _cant_increase_car_speed
+
+    decq    (shiftCeiling)                  # decrement the tick ceiling for faster cars
+
+    _cant_increase_car_speed:
+
     movq    $0, (levelStarted)              # mark level to be restarted
     movq    $1, (stateDirty)                # screen needs to be redrawn
 
