@@ -234,7 +234,6 @@ logic:
     jz      _logic_no_hit                   # if not, skip the game over logic
 
     # TODO: *Game Over*
-    # - display final score (?)
     # - store score in highscores list
 
     # Performing death animation

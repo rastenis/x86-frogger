@@ -101,7 +101,7 @@ gameLoop:
     call 	showMenu                # show the actual menu
 
     jmp     _stage_handler_done
-
+    
     #
     # PLAY STAGE
     #
@@ -114,7 +114,10 @@ gameLoop:
     # HIGHSCORE STAGE
     #
     _highscores_loop:
-    # TODO
+
+    call    listenHighscores         # listen before showing, because a key may have been pressed which makes the state dirty
+    call 	showHighscores           # show the highscores
+
     jmp     _stage_handler_done
 
 quit:
