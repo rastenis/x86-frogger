@@ -166,6 +166,11 @@ _generate_x:                                # inner loop (x)
 #
 logic:
 
+   # Preserve registers
+    pushq   %rbp
+    pushq   %r12
+    movq    %rsp, %rbp
+
     # 1. Level initialization
 
     # Initiate the level if not initiated yet
@@ -231,6 +236,23 @@ logic:
     # TODO: *Game Over*
     # - display final score (?)
     # - store score in highscores list
+
+    # Performing death animation
+    movq    $0, %r12     
+
+    call    screenClear                     # making frogger all alone
+
+    movq    (froggerPosX), %rdi             # load frogger's X position
+    movq    (froggerPosY), %rsi             # load frogger's Y position
+    movq    $0x44, %rdx                     # color info: bg=red, fg=black
+    call    setPixelAtScaledColor           # draw the frogger as a scaled pixel with custom color
+
+    _death_anim:
+    incq    %r12
+
+    cmpq    $999999999, %r12                # waiting for a lot of cycles to complete
+    jle     _death_anim
+
     movq    $1, (gameStage)                 # switch game stage to menu
     movq    $1, (switchStage)               # indicate that we're switching stage (makes sure the menu actually appears)
     movq    $0, (score)                     # reset the score
@@ -258,6 +280,10 @@ logic:
     movq    $1, (stateDirty)                # screen needs to be redrawn
 
     _logic_no_win:
+
+    movq    %rbp, %rsp
+    popq    %r12
+    popq    %rbp
 
     retq
 
