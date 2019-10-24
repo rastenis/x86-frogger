@@ -12,8 +12,6 @@
 .equ    FROGGER_START_POS_X, 10
 .equ    FROGGER_START_POS_Y, 11
 
-froggerPosX:            .quad 0
-froggerPosY:            .quad 0
 currentLevelFormat:     .asciz "Level: %u"
 gameStateArray:         .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
 shiftCounter:           .quad 0                             # shift counter for the gamestate
@@ -27,8 +25,9 @@ generationCarLength:    .quad 0                             # indicates how many
 generationSpaceLength:  .quad 0                             # indicates how many pixels a space is
 generationEmptyLine:    .quad 0                             # indicates if line empty
 generationDirection:    .quad 0                             # indicates direction
-
-
+generationDirectionT:   .quad 0                             # direction toggle
+froggerPosX:            .quad 0                             # frogger's x coord (virtual)
+froggerPosY:            .quad 0                             # frogger's y coord (virtual)
 
 .align 16
 logictbl:
@@ -385,24 +384,26 @@ shiftAll:
     call    screenClear
 
     movq    $0, %r12    # outer loop counter for y coord
+    movq    $0, (generationDirection)    
+    movq    $1, (generationDirectionT)    
 
-_shiftAll_y:            # outer loop (y)
-
+_shiftAll_y:                                # outer loop (y)
 
     cmpq    $0, (generationDirection)
     je      _generation_direction_1
     
-    decq    (generationDirection)       # next line will be filled
+    decq    (generationDirection)           # next line will go
     jmp     _generation_direction_done
 
     _generation_direction_1:
 
+    xorq    $0x1, generationDirectionT      # flipping direction
     movq    $2, (generationDirection)       # next line will be empty
 
     _generation_direction_done:
 
-    movq    (generationDirection), %rsi   # direction
-    movq    %r12, %rdi  # line no.
+    movq    (generationDirectionT), %rsi    # setting direction
+    movq    %r12, %rdi                      # line no.
     call    shiftLine
 
     incq    %r12
