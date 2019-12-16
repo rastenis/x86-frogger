@@ -27,6 +27,7 @@ gameInit:
     # setting program stage to 0, menu.
     # NOTE: spill over, gameInit is not always first
     movq    $1,	(gameStage)
+    movq    $1,	(stateDirty)
 
     movq    $0, (shiftCounter)      # setting initial shift counter+ceiling
     movq    $0, (highscoreCurrent)     
@@ -46,7 +47,6 @@ gameInit:
     retq
 
 gameLoop:
-    call    screenClear	        # clear the screen before each screen update
 
     pushq   %rbp
     movq    %rsp, %rbp
@@ -78,12 +78,6 @@ gameLoop:
     call    printf_coords
     incq    (tick)
 
-    # JUMP STAGE: go to the appropriate section of the game loop
-    movq	(gameStage), %rax
-    movq    menutbl(,%rax,8), %rax  # do the lookup in the jump table
-    testq   %rax, %rax              # check if the current char is a valid action
-    jz      _end_game_loop    		# if not, perform the 'unknown' action
-    jmpq 
     movq    %rbp, %rsp
     popq    %rbp
 

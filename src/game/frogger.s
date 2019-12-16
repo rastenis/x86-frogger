@@ -13,6 +13,8 @@
 .equ    FROGGER_START_POS_Y, 11
 
 currentLevelFormat:     .asciz "Level: %u"
+currentScoreFormat:     .asciz "Score: %u"
+
 gameStateArray:         .skip (STATE_WIDTH*STATE_HEIGHT)*8  # larger than actual VISIBLE_STATE_WIDTHxSTATE_HEIGHT
 shiftCounter:           .quad 0                             # shift counter for the gamestate
 shiftCeiling:           .quad 0                             # shift ceiling for the gamestate
@@ -24,7 +26,7 @@ generationWritingMax:   .quad 0                             # indicates how many
 generationCarLength:    .quad 0                             # indicates how many pixels a car is
 generationSpaceLength:  .quad 0                             # indicates how many pixels a space is
 generationEmptyLine:    .quad 0                             # indicates if line empty
-generationDirection:    .quad 0                             # indicates direction
+generationDirection:    .quad 0                             # direction counter
 generationDirectionT:   .quad 0                             # direction toggle
 froggerPosX:            .quad 0                             # frogger's x coord (virtual)
 froggerPosY:            .quad 0                             # frogger's y coord (virtual)
@@ -565,4 +567,18 @@ shiftLine:
         jne     _shiftLine_loop_left
 
         # Store the temporary left item (stored in %r10) in the rightmost slot
-        movq    $STATE_WIDTH, %rax              # init wi
+        movq    $STATE_WIDTH, %rax              # init with the number of columns
+        mulq    %rdi                            # multiply with the current y coord (so: %rax = cols*y), and x=0
+        addq    $(STATE_WIDTH - 1), %rax        # add $STATE_WIDTH as the x coord (so now: %rax: cols*y + cols)
+        movq    %r10, gameStateArray(,%rax, 8)  # finally store the temporary value back in the leftmost slot
+
+        jmp     _shiftLine_end
+
+    _shiftLine_end:
+    
+    # Restore
+    movq    %rbp, %rsp
+    popq    %r12
+    popq    %rbp
+    
+    retq
