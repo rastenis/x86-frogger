@@ -17,7 +17,7 @@ To get started on developing your game, execute the following steps:
 
 ## Screenshots
 
-## Copyright
+## Copyright for the foundation of the game:
 
 Copyright (C) 2014 Otto Visser, Tim Hegeman
 
